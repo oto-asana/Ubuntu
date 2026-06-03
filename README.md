@@ -1,4 +1,4 @@
-markdown_content = """# 🚀 Ubuntu Automated Provisioning & Network Drive Setup
+# 🚀 Ubuntu Automated Provisioning & Network Drive Setup
 
 This repository contains two essential configuration files for automating the deployment of Ubuntu workstations and seamlessly mapping corporate network drives. Together, they provide a zero-touch installation experience followed by an intuitive, GUI-driven network drive configuration.
 
