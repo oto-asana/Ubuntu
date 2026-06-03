@@ -1,0 +1,87 @@
+#cloud-config
+autoinstall:
+  version: 1
+  
+  # Set the system timezone to Tbilisi
+  timezone: Asia/Tbilisi
+  locale: en_US.UTF-8
+  
+  # Configure both US and Georgian keyboard layouts
+  keyboard:
+    layout: "us,ge"
+    variant: ","
+    toggle: alt_shift_toggle
+  
+  # Primary Admin profile
+  identity:
+    hostname: ubuntu-node
+    realname: administrator
+    username: administrator
+    password: "$6$SmiWYq6ujT0TOfIV$xAXVF0Eg5Vnxl2QoGyClr1TcmDxGMXUnGZ5BS0Dr5LImN15wbmiTEML4RF.EJTZjuTOk090UN.c3.CAYrWwya."
+
+  # Automatically clear and partition the main drive using standard LVM
+  storage:
+    layout:
+      name: lvm
+
+  # Enable OpenSSH access
+  ssh:
+    install-server: true
+    allow-pw: true
+
+  # Enable third-party drivers and media codecs
+  drivers:
+    install: true
+  codecs:
+    install: true
+
+  # Pre-seed essential utilities (VLC added here)
+  packages:
+    - remmina
+    - apt-transport-https
+    - ca-certificates
+    - curl
+    - wget
+    - software-properties-common
+    - gpg
+    - git
+    - git-lfs
+    - vlc
+
+  # Secure, array-isolated post-install commands
+  late-commands:
+    - [ curtin, in-target, --, apt-get, update ]
+    - [ curtin, in-target, --, apt-get, upgrade, -y ]
+
+    # 2. Build the desktop user with groups and a pre-hashed password
+
+    - [ curtin, in-target, --, useradd, -m, -s, /bin/bash, -c, "User", -G, "cdrom,dip,plugdev,users", -p, "$6$ZPMcXrgthm/RTyxQ$gJqGAaldSccsEhOo33vQMebORYFTWRi3GEEVL7cTeiH8WpVcsw9UX72mAqWfdPSPBUN/yygy3E6SitSd0cW6m/", user ]
+
+    # 4. Install Google Chrome
+    - [ curtin, in-target, --, wget, "https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb", -O, /tmp/chrome.deb ]
+    - [ curtin, in-target, --, sh, -c, "DEBIAN_FRONTEND=noninteractive apt-get install -y /tmp/chrome.deb || DEBIAN_FRONTEND=noninteractive apt-get install -f -y" ]
+
+    # 5. Install RustDesk
+    - [ curtin, in-target, --, wget, "https://github.com/rustdesk/rustdesk/releases/download/1.4.6/rustdesk-1.4.6-x86_64.deb", -O, /tmp/rustdesk.deb ]
+    - [ curtin, in-target, --, sh, -c, "DEBIAN_FRONTEND=noninteractive apt-get install -y /tmp/rustdesk.deb || DEBIAN_FRONTEND=noninteractive apt-get install -f -y" ]
+
+    # 6. Install Opera Browser via official repository (Pre-seeded to bypass prompt hangs)
+    - [ curtin, in-target, --, sh, -c, "curl -fsSL https://deb.opera.com/archive.key | gpg --dearmor -o /usr/share/keyrings/opera-archive-keyring.gpg" ]
+    - [ curtin, in-target, --, sh, -c, "echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/opera-archive-keyring.gpg] https://deb.opera.com/opera-stable/ stable non-free' > /etc/apt/sources.list.d/opera-stable.list" ]
+    - [ curtin, in-target, --, apt-get, update ]
+    - [ curtin, in-target, --, sh, -c, "echo 'opera-stable opera-stable/add-apt-repository boolean false' | debconf-set-selections" ]
+    - [ curtin, in-target, --, sh, -c, "DEBIAN_FRONTEND=noninteractive apt-get install -y opera-stable" ]
+
+    # 7. Install LibreOffice
+    - [ curtin, in-target, --, sh, -c, "DEBIAN_FRONTEND=noninteractive apt-get install -y libreoffice" ]
+
+    # 8. Deploy WinRAR alternative
+    - [ curtin, in-target, --, apt-get, install, -y, unrar ]
+    
+    # 9. Initialize Git Large File Storage globally
+    - [ curtin, in-target, --, git, lfs, install, --system ]
+
+
+
+    # 11. Clean up installation files safely
+    - [ curtin, in-target, --, rm, -f, /tmp/chrome.deb, /tmp/rustdesk.deb ]
